@@ -1,6 +1,6 @@
 base_url = "https://blog.laughingman7743.org"
 title = "/var/log/laughingman7743.log"
-description = "Technical notes on Apache Flink, Google Cloud, and software engineering."
+description = "A personal blog about software and other interests."
 default_language = "en"
 generate_feeds = true
 feed_filenames = ["atom.xml"]
