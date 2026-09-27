@@ -7,7 +7,7 @@ The Navidrome article is an English translation of the original Japanese post.
 
 ## Local development
 
-Install Zola 0.23.2 and Node.js 22 or later, then clone the theme, install the build dependencies, and start a local server:
+Install Zola 0.23.2 and Node.js 24 or later, then clone the theme, install the build dependencies, and start a local server:
 
 ```sh
 git submodule update --init --recursive
@@ -25,6 +25,10 @@ npm run build
 `zola serve` previews the content and theme.
 `npm run build` also generates social preview images and their Open Graph and X Card metadata in `public/`.
 Use the complete build for deployment.
+
+The dependency override for Cheerio 1.2.0 selects `encoding-sniffer` 1.0.2 to avoid its deprecated `whatwg-encoding` dependency.
+This build reads UTF-8 HTML with Cheerio's `load()` API; it does not use the buffer or stream encoding APIs.
+Remove the override when upgrading to a Cheerio release that includes the updated dependency.
 
 All changes go through pull requests.
 Merging into `main` triggers the production deployment on Cloudflare Pages.
@@ -57,7 +61,7 @@ Connect this GitHub repository to a Pages project with these build settings:
 
 For an existing Pages project, update the build command in **Settings → Build** before deploying this change.
 The old `zola build` command does not generate social previews.
-The `.node-version` file selects Node.js 22 in the Pages build environment.
+The `.node-version` file selects Node.js 24 in the Pages build environment.
 
 The build uses `CF_PAGES_BRANCH` and `CF_PAGES_URL` to make links and social image URLs point to the pull request's preview deployment.
 Canonical URLs in the HTML still point to the production domain.
