@@ -25,7 +25,7 @@ async function renderCard(title, siteName, domain, isArticle, fonts) {
             fontSize: 19,
             fontWeight: 700,
             letterSpacing: 4,
-            color: "#7de2c4",
+            color: "#ef5350",
             marginBottom: 24,
           }),
           element(title, {
@@ -43,7 +43,7 @@ async function renderCard(title, siteName, domain, isArticle, fonts) {
       element(
         [
           element(domain, { fontSize: 22, color: "#9caebf" }),
-          element("/", { fontSize: 30, color: "#7de2c4", fontWeight: 700 }),
+          element("/", { fontSize: 30, color: "#ef5350", fontWeight: 700 }),
         ],
         {
           display: "flex",
@@ -61,7 +61,7 @@ async function renderCard(title, siteName, domain, isArticle, fonts) {
       width,
       height,
       padding: "48px 64px 38px",
-      borderTop: "8px solid #7de2c4",
+      borderTop: "8px solid #ef5350",
       backgroundColor: "#101a25",
       color: "#f3f6fa",
       fontFamily: "Space Grotesk",
