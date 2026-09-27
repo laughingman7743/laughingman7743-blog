@@ -1,0 +1,51 @@
+base_url = "https://blog.laughingman7743.org"
+title = "/var/log/laughingman7743.log"
+description = "Technical notes on Apache Flink, Google Cloud, and software engineering."
+default_language = "en"
+generate_feeds = true
+feed_filenames = ["atom.xml"]
+build_search_index = true
+compile_sass = true
+minify_html = true
+theme = "apollo"
+taxonomies = [{ name = "tags" }]
+
+[search]
+include_title = true
+include_description = true
+include_path = true
+include_content = true
+index_format = "elasticlunr_json"
+
+[markdown.highlighting]
+style = "class"
+light_theme = "github-light"
+dark_theme = "github-dark"
+error_on_missing_language = false
+
+[extra]
+toc = true
+use_cdn = false
+favicon = ""
+theme = "toggle"
+fancy_code = true
+dynamic_note = false
+mathjax = false
+repo_url = "https://github.com/laughingman7743/laughingman7743-blog/tree/main/content/"
+fediverse = false
+fediverse_creator = ""
+menu = [
+  { name = "/posts", url = "/posts", weight = 1 },
+  { name = "/tags", url = "/tags", weight = 2 },
+]
+socials = [
+  { name = "GitHub", url = "https://github.com/laughingman7743", icon = "github" },
+]
+stylesheets = []
+
+[extra.taxonomies]
+sort_by = "page_count"
+reverse = true
+
+[extra.analytics]
+enabled = false
