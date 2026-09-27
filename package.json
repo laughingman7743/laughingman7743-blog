@@ -1,0 +1,21 @@
+{
+  "name": "laughingman7743-blog",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "node src/build.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "2.6.2",
+    "cheerio": "1.2.0",
+    "satori": "0.33.5"
+  },
+  "overrides": {
+    "cheerio@1.2.0": {
+      "encoding-sniffer": "1.0.2"
+    }
+  }
+}
