@@ -23,7 +23,8 @@ On Iceberg tables, indexed and sliced UPDATE assignments can replace individual 
 Indices are one-based by default, and slice stops are inclusive.
 
 Typed ARRAY results use a JSON projection in the generated SQL.
-Queries that need rewriting require explicit SELECT columns and labels on literal SQL expressions; prefer SQLAlchemy expressions for ORDER BY.
+Ordered, DISTINCT, and compound typed ARRAY queries require explicit SELECT columns.
+Label literal SQL expressions and prefer SQLAlchemy expressions for ORDER BY.
 Decimal ARRAY binds require an explicit `Numeric(precision, scale)` to preserve fractional values.
 Raw SQL queries and arrays with unknown element types retain the cursor's existing conversion behavior.
 The [ARRAY guide for this release](https://github.com/pyathena-dev/PyAthena/blob/v3.37.0/docs/sqlalchemy.md#array-type-support) covers examples and the query restrictions in detail.
@@ -34,7 +35,7 @@ The [ARRAY guide for this release](https://github.com/pyathena-dev/PyAthena/blob
   Athena rejected the previous `ROW(...)` output.
   Integer types inside ARRAY, MAP, and STRUCT column definitions now render as `INT`.
 - **DOUBLE casts:** Casting to `Double` or `DOUBLE_PRECISION` now produces `DOUBLE`, fixing the previous use of the 32-bit `REAL` type.
-- **Binary NULLs:** CSV result sets preserve binary NULL values as Python `None`.
+- **Binary NULLs:** The pandas and Arrow cursors now distinguish binary NULLs (`None`) from empty binary values (`b""`) when fetching CSV results with default settings and converters.
 
 Thanks to [mvanhorn](https://github.com/mvanhorn) for the STRUCT DDL fix and [aminghadersohi](https://github.com/aminghadersohi) for reporting the issue.
 
