@@ -36,7 +36,7 @@ Applications relying on those cache hits should expect additional query submissi
 Athena's server-side result reuse remains a separate setting.
 The [cache documentation for this release](https://github.com/pyathena-dev/PyAthena/blob/v3.38.0/docs/usage.md#cache-configuration) describes the client-side behavior.
 
-## pandas and Arrow results
+## Pandas and Arrow results
 
 On a fresh `PandasCursor` result without an explicit `chunksize`, `as_pandas()` now returns the whole result even when `auto_optimize_chunksize` selected a chunk size.
 Previously, it returned only the first chunk in that case.
