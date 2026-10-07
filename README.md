@@ -47,6 +47,17 @@ Their filenames include a hash of the PNG, so changes to the title or image desi
 Social platforms can still cache the page metadata and control whether and when a card appears.
 The layout and metadata generation live in `src/social-images.mjs`.
 
+Each article ends with a **Post on X** link that opens X's composer with two lines:
+
+```text
+Article title - /var/log/laughingman7743.log
+https://blog.laughingman7743.org/posts/article-slug/
+```
+
+The link uses [X's Web Intent](https://docs.x.com/x-for-websites/post-button/guides/web-intent) and works without JavaScript.
+The reader reviews and submits the post on X.
+`extra.canonical_base_url` in `zola.toml` sets the production origin for both canonical metadata and shared article URLs, including preview builds; keep it without a trailing slash.
+
 ## Cloudflare Pages
 
 Connect this GitHub repository to a Pages project with these build settings:
