@@ -64,7 +64,7 @@ With the default converter, numeric UTC offsets such as `+05:30` in `TIMESTAMP W
 For Spark, readiness polling raises `OperationalError` when a session is terminated, degraded, or failed.
 Failed startup also attempts to terminate a newly created session, and `AsyncSparkCursor.close()` shuts down its executor even if session termination fails.
 
-Thanks to [aminghadersohi](https://github.com/aminghadersohi) for the timezone and reflection reports and for contributing the bare-URL dialect fix.
+Thanks to [aminghadersohi](https://github.com/aminghadersohi) for the timezone and reflection reports and for contributing the [bare-URL dialect fix](https://github.com/pyathena-dev/PyAthena/pull/839).
 
 ## Upgrading
 
