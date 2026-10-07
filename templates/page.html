@@ -1,0 +1,17 @@
+{% extends "apollo/templates/page.html" %}
+
+{% block main_content %}
+    {{ super() }}
+    {% set canonical_url = config.extra.canonical_base_url ~ page.path %}
+    {% set share_text = page.title ~ " - " ~ config.title ~ "\n" ~ canonical_url %}
+    <div class="post-share">
+        <a class="icon-button post-share-link"
+           href="https://x.com/intent/tweet?text={{ share_text | urlencode_strict }}"
+           target="_blank"
+           rel="noopener noreferrer"
+           aria-label="Post on X (opens in a new tab)">
+            <img src="{{ get_url(path='icons/social/x-twitter.svg') }}" alt="" width="16" height="16">
+            <span>Post on X</span>
+        </a>
+    </div>
+{% endblock main_content %}

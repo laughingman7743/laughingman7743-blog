@@ -24,6 +24,7 @@ dark_theme = "github-dark"
 error_on_missing_language = false
 
 [extra]
+canonical_base_url = "https://blog.laughingman7743.org"
 toc = true
 use_cdn = false
 favicon = ""
@@ -41,7 +42,7 @@ menu = [
 socials = [
   { name = "GitHub", url = "https://github.com/laughingman7743", icon = "github" },
 ]
-stylesheets = []
+stylesheets = ["share.css"]
 
 [extra.taxonomies]
 sort_by = "page_count"

@@ -1,0 +1,23 @@
+.post-share {
+  margin-top: 2rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border-color);
+}
+
+.post-share-link {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 8px 12px;
+  gap: 8px;
+  color: var(--text-0);
+  font-size: 0.875rem;
+}
+
+.post-share-link:hover {
+  color: var(--text-0);
+}
+
+.post-share-link:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 4px;
+}
