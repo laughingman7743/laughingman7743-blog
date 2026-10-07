@@ -52,12 +52,15 @@ On that path, fetch methods return the values held by `as_arrow()`; a custom Arr
 
 ## SQLAlchemy and session handling
 
-SQLAlchemy reflection now reports top-level MAP and STRUCT/ROW columns as `AthenaMap` and `AthenaStruct`, with their key, value, and field types, instead of `String`.
+SQLAlchemy reflection now reports top-level MAP columns as `AthenaMap` with key and value types, replacing `String`.
+STRUCT/ROW columns continue to use `AthenaStruct` and now include their field types.
 Unrecognized field, key, or value types are reported as `NullType` with a warning.
+Selected MAP and STRUCT values still use the cursor's existing conversion behavior.
+
 A bare `awsathena://` URL now selects the REST dialect, matching `awsathena+rest://` and fixing the previous `engine.driver` error.
 PyAthena's `to_sql` helper also finds existing tables regardless of the case of the supplied name.
 
-Numeric UTC offsets such as `+05:30` in `TIMESTAMP WITH TIME ZONE` results now produce timezone-aware datetimes with a fixed offset.
+With the default converter, numeric UTC offsets such as `+05:30` in `TIMESTAMP WITH TIME ZONE` results now produce timezone-aware datetimes with a fixed offset.
 For Spark, readiness polling raises `OperationalError` when a session is terminated, degraded, or failed.
 Failed startup also attempts to terminate a newly created session, and `AsyncSparkCursor.close()` shuts down its executor even if session termination fails.
 
@@ -71,7 +74,6 @@ Install this release with:
 python -m pip install --upgrade 'PyAthena==3.38.0'
 ```
 
-Keep any extras used by the application, for example `PyAthena[SQLAlchemy]==3.38.0`.
-The 3.x line continues to support Python 3.10 and keeps its `sqlalchemy>=1.0.0` dependency requirement.
-This release leaves the dependency requirements unchanged.
+Keep any extras used by the application, for example `'PyAthena[SQLAlchemy]==3.38.0'`.
+The 3.x line continues to support Python 3.10, and dependency requirements, including `sqlalchemy>=1.0.0`, are unchanged.
 The [full changelog](https://github.com/pyathena-dev/PyAthena/compare/v3.37.0...v3.38.0) includes the remaining cursor fixes and test workflow improvements.
