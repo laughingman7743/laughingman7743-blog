@@ -68,7 +68,6 @@ Connect this GitHub repository to a Pages project with these build settings:
 | Framework | Zola |
 | Build command | `npm ci && npm run build` |
 | Build output directory | `public` |
-| Environment variable | `ZOLA_VERSION=0.23.2` |
 
 For an existing Pages project, update the build command in **Settings → Build** before deploying this change.
 The old `zola build` command does not generate social previews.
