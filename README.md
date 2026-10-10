@@ -69,6 +69,10 @@ Connect this GitHub repository to a Pages project with these build settings:
 | Build command | `npm ci && npm run build` |
 | Build output directory | `public` |
 
+Cloudflare Pages [preinstalls Zola](https://developers.cloudflare.com/pages/framework-guides/deploy-a-zola-site/), so a version override is optional when its installed version supports the theme.
+The bundled Apollo templates fail to parse with Zola 0.22.1.
+If the build image uses that version, set `ZOLA_VERSION=0.23.2`, which passes the site build.
+
 For an existing Pages project, update the build command in **Settings → Build** before deploying this change.
 The old `zola build` command does not generate social previews.
 The `.node-version` file selects Node.js 24 in the Pages build environment.

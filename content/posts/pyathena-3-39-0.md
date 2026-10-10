@@ -40,7 +40,7 @@ Closing a Polars result set also stops an existing `iter_chunks()` iterator.
 
 DDL now treats a table as Iceberg only when its `table_type` property is `ICEBERG`, compared case-insensitively.
 Unrelated mentions of `table_type` and `iceberg` in table properties no longer cause a Hive table to compile with the Iceberg layout.
-On an S3 Tables catalog, a non-Iceberg definition raises `CompileError`.
+On an S3 Tables catalog, such a table now raises `CompileError` instead of compiling as Iceberg.
 
 ## Upgrading
 
