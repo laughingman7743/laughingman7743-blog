@@ -104,9 +104,15 @@ Pass `terminate_session_on_close=True` to keep the old behavior, as described in
 
 ## Tests and CI
 
-The integration tests run against real AWS services, and their daily cost in the test account dropped by about 87%, from $17.6 to $2.3, without reducing what they cover.
-Pull requests run the PyAthena, SQLAlchemy, and Spark suites in parallel, only for the suites whose files changed and only once a pull request is ready for review.
-The release workflow runs every suite on every supported Python version before it publishes to PyPI, which is how this release was published.
+The integration tests run against real AWS services, so every run costs money, and running every suite on every supported Python version for each pull request had become expensive.
+Pull requests now run the tests on the newest supported Python version only, and only for the suites whose files changed.
+Together with other test changes, this lowered the daily cost of the test account by about 87%, from $17.6 to $2.3, without reducing what the tests cover.
+
+The suites had also grown to take a long time, so the PyAthena, SQLAlchemy, and Spark suites now run in parallel.
+
+The other Python versions are covered at release time.
+Before publishing, the release workflow runs every suite on every supported Python version, and it publishes to PyPI only after all of them pass.
+PyAthena 4.0.0 was published this way, after the full suites passed on Python 3.11 through 3.14.
 
 ## Upgrading
 
