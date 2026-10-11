@@ -1,7 +1,7 @@
 +++
 title = "Releasing PyAthena 3.38.0 with cursor and S3 fixes"
 description = "PyAthena 3.38.0 fixes S3 appends, parameterized query caching, pandas and Arrow results, SQLAlchemy reflection, and Spark session cleanup."
-date = 2026-10-07
+date = 2026-10-07T23:55:04+09:00
 draft = false
 
 [taxonomies]
