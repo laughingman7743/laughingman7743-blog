@@ -106,7 +106,7 @@ Pass `terminate_session_on_close=True` to keep the old behavior, as described in
 
 The integration tests run against real AWS services, so every run costs money, and running every suite on every supported Python version for each pull request had become expensive.
 Pull requests now run the tests on the newest supported Python version only, and only for the suites whose files changed.
-Together with other test changes, this lowered the daily cost of the test account by about 87%, from $17.6 to $2.3, without reducing what the tests cover.
+Together with other test changes, this lowered the daily cost of the test account by about 87% without reducing what the tests cover.
 
 The suites had also grown to take a long time, so the PyAthena, SQLAlchemy, and Spark suites now run in parallel.
 
