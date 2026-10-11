@@ -1,7 +1,7 @@
 +++
 title = "Releasing PyAthena 3.37.0 with SQLAlchemy ARRAY support"
 description = "PyAthena 3.37.0 adds typed SQLAlchemy ARRAY queries and updates, fixes STRUCT DDL and DOUBLE casts, and preserves binary NULLs in CSV results."
-date = 2026-10-02
+date = 2026-10-02T02:03:51+09:00
 draft = false
 
 [taxonomies]

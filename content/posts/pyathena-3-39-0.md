@@ -1,7 +1,7 @@
 +++
 title = "Releasing PyAthena 3.39.0 with credential and result fixes"
 description = "PyAthena 3.39.0 fixes Arrow credentials, array and JSON conversion, pandas and Polars TIME results, and Iceberg detection, and requires tenacity 8.0.1 or later."
-date = 2026-10-11
+date = 2026-10-11T10:45:59+09:00
 draft = false
 
 [taxonomies]

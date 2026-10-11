@@ -2,7 +2,7 @@
 title = "Migrating a Subsonic server to Navidrome and s3fs"
 description = "A 2023 setup log for moving a Subsonic server on CentOS 7 to Navidrome on Debian 12, with music stored in S3 through s3fs."
 date = 2023-09-20T16:07:20+09:00
-updated = 2026-09-27
+updated = 2026-09-27T14:49:01+09:00
 draft = false
 
 [taxonomies]
