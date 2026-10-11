@@ -1,7 +1,7 @@
 +++
 title = "Releasing PyAthena 4.0.0"
 description = "PyAthena 4.0.0 attributes its copyright to The PyAthena authors, adds a NOTICE file, requires Python 3.11, and makes connection and cursor arguments stricter, with fixes across result conversion, SQLAlchemy, and the S3 filesystem."
-date = 2026-10-11
+date = 2026-10-11T11:49:39+09:00
 draft = false
 
 [taxonomies]
