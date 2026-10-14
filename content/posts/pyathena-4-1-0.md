@@ -52,6 +52,7 @@ For the flat case, client result time increased from 1.2 seconds to 2.2 seconds.
 
 For `PandasCursor`, this release adds chunked reading of the Parquet files produced by UNLOAD.
 In the 4.1.0 benchmark, 10 million flat rows peaked at 604 MiB with 10,000-row chunks, compared with 5,376 MiB without chunking.
+For this case, client result time was 5.1 seconds with chunks, compared with 1.8 seconds without.
 
 For pandas, use `unload=True`, `chunksize`, and `iter_chunks()` to process one DataFrame at a time:
 
@@ -84,7 +85,7 @@ With `engine="python"` and NA options such as `keep_default_na=True`, a JSON str
 
 ## Asyncio cleanup and SQLAlchemy names
 
-When `AioPandasCursor` starts another query or exits an `async with` block, it now closes the existing result set in a worker thread.
+The native asyncio cursors for rows, pandas, Arrow, Polars, and S3FS now close existing result sets in a worker thread when starting another query, running `executemany()`, or exiting an `async with` block.
 Closing a result stream can wait for an outstanding read, so moving that work off the event loop lets other coroutines continue.
 
 The SQLAlchemy adapter classes in `pyathena.aio.sqlalchemy.base` have been renamed:
