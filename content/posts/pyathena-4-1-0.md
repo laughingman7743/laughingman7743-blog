@@ -1,5 +1,5 @@
 +++
-title = "Releasing PyAthena 4.1.0 with faster result reads"
+title = "Releasing PyAthena 4.1.0 with faster reads and lower memory use"
 description = "PyAthena 4.1.0 speeds up CSV result reads and reduces memory use for chunked UNLOAD results, with changes to JSON parsing and asyncio SQLAlchemy adapter names."
 date = 2026-10-14
 draft = false
@@ -32,21 +32,26 @@ Prefetching uses additional memory for buffered data.
 For the same 10 million flat rows with `chunksize=10_000`, PandasCursor's CSV peak memory rose from 256 MiB to 363 MiB.
 The [S3 read options](https://github.com/pyathena-dev/PyAthena/blob/v4.1.0/docs/pandas.md#s3-read-options) describe how to select a different block size or cache type.
 
-## Chunked UNLOAD results
+## Memory use for UNLOAD results
 
-`PandasCursor` can now read UNLOAD results in chunks, decoding the Parquet files one at a time.
-With pyarrow installed and no custom Polars read options, `PolarsCursor` uses the same incremental reader.
-The reader prefetches small files and buffers larger files one row group at a time, so memory use depends on the chunk size, row groups, and buffers.
+CSV result chunking was already supported by both `PandasCursor` and `PolarsCursor` before this release.
+`PolarsCursor` also supported chunked UNLOAD reads; 4.1.0 improves how it reads those Parquet files to reduce memory use.
 
-In the 4.1.0 benchmark, **10 million flat rows** used the following peak memory:
+With pyarrow installed and no custom Polars read options, it now decodes the files one at a time, prefetches small files, and buffers larger files one row group at a time.
+Memory use depends on the chunk size, row groups, and buffers.
 
-| Cursor with UNLOAD | Without chunks | 10,000-row chunks |
+The release benchmarks measured the following peak memory for **PolarsCursor with UNLOAD, 10 million rows, and `chunksize=10_000`**:
+
+| Result shape | 4.0.0 | 4.1.0 |
 | --- | ---: | ---: |
-| PandasCursor | 5,376 MiB | 604 MiB |
-| PolarsCursor | 3,687 MiB | 659 MiB |
+| Flat | 3,732 MiB | 659 MiB |
+| Nested | 6,073 MiB | 642 MiB |
 
 These values are sampled process RSS, including the benchmark's imports.
-Chunking also adds work: PandasCursor's client result time for this case was 5.1 seconds with 10,000-row chunks, compared with 1.8 seconds without chunks.
+For the flat case, client result time increased from 1.2 seconds to 2.2 seconds.
+
+For `PandasCursor`, this release adds chunked reading of the Parquet files produced by UNLOAD.
+In the 4.1.0 benchmark, 10 million flat rows peaked at 604 MiB with 10,000-row chunks, compared with 5,376 MiB without chunking.
 
 For pandas, use `unload=True`, `chunksize`, and `iter_chunks()` to process one DataFrame at a time:
 
