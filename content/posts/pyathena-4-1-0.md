@@ -74,7 +74,7 @@ For CSV results with `json` columns, `PandasCursor` now converts the JSON values
 It no longer forces `low_memory=False`, allowing pandas' C engine to use its default internal chunking.
 
 This changes how pandas options interact with JSON text.
-With `parse_dates` naming a `json` column, a JSON string such as `"2020-01-01"` keeps its quotes and is no longer parsed as a date; cast the value in SQL instead.
+With `parse_dates` naming a `json` column, pandas attempts date parsing before JSON decoding, so a JSON string such as `"2020-01-01"` is no longer parsed as a date; cast the value in SQL instead.
 With `engine="python"` and NA options such as `keep_default_na=True`, a JSON string such as `"NA"` stays a string, while SQL NULL remains `None`.
 
 ## Asyncio cleanup and SQLAlchemy names
