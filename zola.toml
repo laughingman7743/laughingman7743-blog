@@ -4,6 +4,7 @@ description = "A personal blog about software and other interests."
 default_language = "en"
 generate_feeds = true
 feed_filenames = ["atom.xml"]
+exclude_paginated_pages_in_sitemap = "all"
 build_search_index = true
 compile_sass = true
 minify_html = true
