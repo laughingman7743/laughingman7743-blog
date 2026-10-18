@@ -42,6 +42,7 @@ Both sinks provide at-least-once delivery with checkpointing.
 Replay behavior depends on the write operation and key, and Native-mode writes to the same document are not ordered.
 Those distinctions matter when choosing between loading one row per key, maintaining changing values, and appending records under generated IDs.
 The [Firestore SQL reference](https://flink-gcp.github.io/flink-connector-gcp/1.2/docs/connectors/table/firestore/) and [Datastore SQL reference](https://flink-gcp.github.io/flink-connector-gcp/1.2/docs/connectors/table/datastore/) describe the supported types and delivery constraints.
+The [Firestore connector article](https://blog.laughingman7743.org/posts/flink-connector-gcp-firestore/) covers SQL and DataStream usage in more detail.
 
 ## SQL catalogs from service metadata
 
