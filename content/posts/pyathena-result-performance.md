@@ -282,8 +282,8 @@ Those are concrete choices the completed benchmarks now let me recommend, with m
 [bench-41]: https://github.com/pyathena-dev/PyAthena/blob/0a58be36ff188fc1dc9541d1d28e5383500a8110/benchmarks/history/2026-10-13-437276e1.md
 [bench-40]: https://github.com/pyathena-dev/PyAthena/blob/0a58be36ff188fc1dc9541d1d28e5383500a8110/benchmarks/history/2026-10-11-8a69ce03.md
 [harness]: https://github.com/pyathena-dev/PyAthena/blob/9e99caa84857f8d29abe63435461fc412e040c43/benchmarks/README.md#measurement-semantics
-[csv-change]: https://github.com/pyathena-dev/PyAthena/pull/1132
-[parquet-change]: https://github.com/pyathena-dev/PyAthena/pull/1131
+[csv-change]: https://github.com/pyathena-dev/PyAthena/pull/1134
+[parquet-change]: https://github.com/pyathena-dev/PyAthena/pull/1135
 [parquet-reader]: https://github.com/pyathena-dev/PyAthena/blob/v4.2.0/pyathena/arrow/reader.py
 [pandas-guide]: https://github.com/pyathena-dev/PyAthena/blob/v4.2.0/docs/pandas.md
 [polars-guide]: https://github.com/pyathena-dev/PyAthena/blob/v4.2.0/docs/polars.md
