@@ -14,7 +14,7 @@ Two PyAthena issues had been open for years.
 The [4.2.0 benchmark publication][publication] finally gave me enough evidence to close both.
 
 The result is useful beyond the version number.
-PandasCursor now competes with awswrangler for the measured DataFrame reads, and the pandas and Polars cursors processed 100 million flat rows with roughly 0.5–1 GiB of sampled process memory when reading in chunks.
+PandasCursor now competes with awswrangler for the measured DataFrame reads, and the pandas and Polars cursors processed 100 million flat rows with roughly 0.5–1 GiB of sampled process memory when reading in 100,000-row chunks.
 SQLAlchemy reads improved substantially too, although reconstructing a DataFrame from Python rows still costs time and memory.
 
 These measurements use a new workload, not a replay of the queries in those old issues.
@@ -204,6 +204,7 @@ The one unchunked PandasCursor CSV trial used 49,824 MiB and did fit on the 64 G
 This was not an out-of-memory test on a smaller machine.
 The chunked cases instead demonstrate that this workload can be consumed without holding its full DataFrame in memory.
 The UNLOAD cases wrote eight files, up to about 184 MiB each, and PandasCursor, PolarsCursor, and Wrangler completed their chunked UNLOAD reads in roughly 35–40 seconds.
+At the same chunk size, the CSV totals were 699.88 seconds for PandasCursor, 373.57 seconds for PolarsCursor 1.44.2, and 1,233.06 seconds for Wrangler: lower memory use in these cases came with a much longer wait.
 
 For direct pandas use, process each chunk and release it before moving on:
 
