@@ -50,13 +50,13 @@ Athena execution is only the first part of returning a query to Python.
 The client can page through GetQueryResults, read the CSV result directly from S3, or ask Athena to UNLOAD Parquet files and read those.
 Afterward, the chosen API determines whether the application receives columnar data or Python rows.
 
-| Interface | Result path | What the caller receives |
-| --- | --- | --- |
-| Default Cursor | GetQueryResults pages | Python rows |
-| PandasCursor | S3 CSV or UNLOAD Parquet | DataFrame, chunks, or rows |
-| ArrowCursor | S3 CSV or UNLOAD Parquet | Arrow table, or rows |
-| PolarsCursor | S3 CSV or UNLOAD Parquet | Polars DataFrame, chunks, or rows |
-| `pandas.read_sql_query()` through SQLAlchemy | The selected driver's path, followed by row output | A newly constructed pandas DataFrame or chunks |
+| Interface | Retrieval and output |
+| --- | --- |
+| Default Cursor | GetQueryResults pages returning Python rows |
+| PandasCursor | CSV or UNLOAD; pandas DataFrame, chunks, or rows |
+| ArrowCursor | CSV or UNLOAD; Arrow table or rows |
+| PolarsCursor | CSV or UNLOAD; Polars DataFrame, chunks, or rows |
+| SQLAlchemy + pandas | The selected driver's rows, rebuilt as pandas DataFrames or chunks |
 
 For a large DataFrame, the last distinction matters.
 Using `awsathena+pandas` does not make `pandas.read_sql_query()` call `cursor.as_pandas()`.
@@ -146,7 +146,9 @@ The pandas PR recorded local synthetic row-output gains of roughly six to nine t
 Those numbers exclude Athena and S3; they are evidence about the conversion mechanism, not end-to-end query speedups.
 The AWS measurements establish the change visible to callers:
 
-| UNLOAD through `read_sql_query()`, no chunks | 4.1.0 total | 4.2.0 total |
+All rows below use UNLOAD through `read_sql_query()`, without chunking.
+
+| Driver and flat row count | 4.1.0 total | 4.2.0 total |
 | --- | ---: | ---: |
 | pandas driver, 1 million flat rows | 18.31 s | 7.02 s |
 | Polars driver, 1 million flat rows | 11.28 s | 6.66 s |
@@ -161,13 +163,13 @@ The large gains belong to the pandas and Polars row paths.
 For ten million flat rows without chunking, 4.2.0 and awswrangler 3.17.1 measured as follows.
 All entries return pandas DataFrames, but the SQLAlchemy rows include reconstruction through Python rows.
 
-| Reader | Transport | Total | Client result |
-| --- | --- | ---: | ---: |
-| PandasCursor, direct DataFrame | CSV | 84.17 s | 34.30 s |
-| awswrangler | CSV | 108.88 s | 58.25 s |
-| PandasCursor, direct DataFrame | UNLOAD | 19.79 s | 2.40 s |
-| awswrangler | UNLOAD | 23.44 s | 3.72 s |
-| SQLAlchemy pandas driver | UNLOAD | 50.71 s | 34.35 s |
+| Reader and transport | Total | Client result |
+| --- | ---: | ---: |
+| PandasCursor direct, CSV | 84.17 s | 34.30 s |
+| awswrangler, CSV | 108.88 s | 58.25 s |
+| PandasCursor direct, UNLOAD | 19.79 s | 2.40 s |
+| awswrangler, UNLOAD | 23.44 s | 3.72 s |
+| SQLAlchemy pandas, UNLOAD | 50.71 s | 34.35 s |
 
 The direct pandas reads are competitive in these cases.
 The SQLAlchemy result is much faster than before, and faster than Wrangler's CSV read, but still takes about twice Wrangler's UNLOAD total time.
@@ -188,14 +190,14 @@ The benchmark supports choosing a path for a known workload, not a claim that ev
 The largest 4.2.0 cases tested whether memory remained manageable as the result grew tenfold.
 With 100,000-row chunks and the flat workload, the published peak RSS values were:
 
-| Reader | Transport | 10 million rows | 100 million rows |
-| --- | --- | ---: | ---: |
-| PandasCursor | CSV | 461 MiB | 462 MiB |
-| PandasCursor | UNLOAD | 771 MiB | 986 MiB |
-| PolarsCursor 1.44.2 | CSV | 978 MiB | 1,001 MiB |
-| PolarsCursor 1.44.2 | UNLOAD | 817 MiB | 1,051 MiB |
-| awswrangler | CSV | 391 MiB | 390 MiB |
-| awswrangler | UNLOAD | 820 MiB | 1,134 MiB |
+| Reader and transport | 10 million rows | 100 million rows |
+| --- | ---: | ---: |
+| PandasCursor, CSV | 461 MiB | 462 MiB |
+| PandasCursor, UNLOAD | 771 MiB | 986 MiB |
+| PolarsCursor 1.44.2, CSV | 978 MiB | 1,001 MiB |
+| PolarsCursor 1.44.2, UNLOAD | 817 MiB | 1,051 MiB |
+| awswrangler, CSV | 391 MiB | 390 MiB |
+| awswrangler, UNLOAD | 820 MiB | 1,134 MiB |
 
 The 100-million-row CSV was about 29 GB.
 The one unchunked PandasCursor CSV trial used 49,824 MiB and did fit on the 64 GiB host, close to the harness's 50,506 MiB limit.
