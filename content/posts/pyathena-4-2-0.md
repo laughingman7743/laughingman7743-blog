@@ -56,7 +56,7 @@ The error identifies the column.
 UNLOAD timestamp handling also changes.
 The pandas and Arrow readers use microseconds at every nesting level, avoiding the nanosecond overflow that corrupted dates outside 1677–2262.
 Polars 2.0 supports the corresponding read, but **Polars 1.x still reads UNLOAD timestamps at nanoseconds before casting them**, so out-of-range values remain wrong.
-It now logs a warning recommending Polars 2.0.
+PolarsCursor now logs a warning recommending Polars 2.0.
 Chunked Polars reads with pyarrow installed and no read options passed to `execute()` use the path that reads these values correctly.
 Custom schemas and timestamp-unit overrides have their own behavior, documented in the [temporal type guide][temporal-guide].
 
@@ -122,7 +122,7 @@ The [asyncio guide][aio-guide] describes cancellation and cleanup in detail.
 ## S3 transfers and compatibility
 
 Multipart writes now bound the number of parts in flight by `max_workers`, waiting for a part to finish before admitting more work.
-In the [filesystem benchmark][filesystem-benchmark], writing a 6 GiB object with 40 workers peaked at 690–699 MiB, compared with 6,005–6,313 MiB in the 4.1.0 run.
+In the [filesystem benchmark][filesystem-benchmark], writing a 6 GiB object with 40 workers peaked at 690–699 MiB, compared with 6,005–6,034 MiB in the 4.1.0 run.
 Both synchronous and asyncio filesystem paths were measured.
 
 `AioS3FileSystem` now sizes its worker pools by `max_workers`, avoiding the event loop's default executor limit.
