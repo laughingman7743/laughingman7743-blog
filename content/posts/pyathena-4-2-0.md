@@ -121,9 +121,9 @@ The [asyncio guide][aio-guide] describes cancellation and cleanup in detail.
 
 ## S3 transfers and compatibility
 
-Multipart writes now bound the number of parts in flight by `max_workers`, waiting for a part to finish before admitting more work.
-In the [filesystem benchmark][filesystem-benchmark], writing a 6 GiB object with 40 workers peaked at 690–699 MiB, compared with 6,005–6,034 MiB in the 4.1.0 run.
-Both synchronous and asyncio filesystem paths were measured.
+In the [filesystem benchmark][filesystem-benchmark], PyAthena 4.2.0 used much less memory for multipart uploads than 4.1.0.
+When writing a 6 GiB object with 40 workers, peak process memory fell from 6,005–6,034 MiB in 4.1.0 to 690–699 MiB in 4.2.0 across the synchronous and asyncio filesystem paths.
+The write path now keeps at most `max_workers` upload parts in flight and waits for one to finish before submitting another, limiting the memory held by pending uploads.
 
 `AioS3FileSystem` now sizes its worker pools by `max_workers`, avoiding the event loop's default executor limit.
 With 40 workers, its measured write and copy throughput matched the synchronous filesystem's.
@@ -131,6 +131,8 @@ This still runs blocking boto3 calls in threads, and `S3FileSystem` remains regi
 
 Polars 2.0 is supported, including map columns in UNLOAD results.
 There is a known memory regression for whole CSV reads with Polars 1.x: the read holds a copy of the result file while parsing it.
+The regression is tracked in [#1307][polars-csv-issue], with a proposed fix in [#1313][polars-csv-fix].
+As of October 21, 2026, the fix is still a draft PR with no target release assigned.
 Polars 2.0, chunked reads, and UNLOAD results avoid that particular regression.
 
 ## Upgrading
@@ -148,6 +150,8 @@ For an upgrade from 3.x, read the [4.0.0 post](@/posts/pyathena-4-0-0.md) as wel
 [release]: https://github.com/pyathena-dev/PyAthena/releases/tag/v4.2.0
 [cursor-benchmark]: https://github.com/pyathena-dev/PyAthena/blob/0a58be36ff188fc1dc9541d1d28e5383500a8110/benchmarks/history/2026-10-19-9e99caa8.md
 [filesystem-benchmark]: https://github.com/pyathena-dev/PyAthena/blob/0a58be36ff188fc1dc9541d1d28e5383500a8110/benchmarks/history/2026-10-19-9e99caa8-filesystem.md
+[polars-csv-issue]: https://github.com/pyathena-dev/PyAthena/issues/1307
+[polars-csv-fix]: https://github.com/pyathena-dev/PyAthena/pull/1313
 [pandas-guide]: https://github.com/pyathena-dev/PyAthena/blob/v4.2.0/docs/pandas.md
 [temporal-guide]: https://github.com/pyathena-dev/PyAthena/blob/v4.2.0/docs/temporal_types.md
 [aio-guide]: https://github.com/pyathena-dev/PyAthena/blob/v4.2.0/docs/aio.md
