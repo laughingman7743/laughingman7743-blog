@@ -131,8 +131,8 @@ This still runs blocking boto3 calls in threads, and `S3FileSystem` remains regi
 
 Polars 2.0 is supported, including map columns in UNLOAD results.
 There is a known memory regression for whole CSV reads with Polars 1.x: the read holds a copy of the result file while parsing it.
-The regression is tracked in [#1307][polars-csv-issue], with a proposed fix in [#1313][polars-csv-fix].
-As of October 21, 2026, the fix is still a draft PR with no target release assigned.
+The regression is tracked in [#1307][polars-csv-issue].
+A fix has been merged in [#1313][polars-csv-fix] and is expected in the next PyAthena release.
 Polars 2.0, chunked reads, and UNLOAD results avoid that particular regression.
 
 ## Upgrading
