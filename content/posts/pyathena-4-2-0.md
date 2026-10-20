@@ -1,7 +1,7 @@
 +++
 title = "Releasing PyAthena 4.2.0"
 description = "PyAthena 4.2.0 speeds up SQLAlchemy result reads, supports Python 3.15 and Polars 2.0, and changes cursor lifecycle, asyncio accessors, and temporal types."
-date = 2026-10-20
+date = 2026-10-20T00:25:38+09:00
 draft = false
 
 [taxonomies]
