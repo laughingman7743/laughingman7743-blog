@@ -266,8 +266,8 @@ ArrowCursor reads a whole table, so merely chunking its SQLAlchemy output does n
 Polars 1.x has a known regression for whole CSV reads in 4.2.0: the parser receives bytes that keep a copy of the result file alive.
 At ten million flat rows, its peak rose from 6,854 to 9,641 MiB compared with 4.1.0.
 Polars 2.0 measured 7,547 MiB for that case; chunking or UNLOAD avoids this particular whole-CSV issue.
-The regression is tracked in [#1307][polars-issue], with a proposed fix in [#1313][polars-csv-fix].
-As of October 21, 2026, the fix is still a draft PR with no target release assigned.
+The regression is tracked in [#1307][polars-issue].
+A fix has been merged in [#1313][polars-csv-fix] and is expected in the next PyAthena release.
 
 The same release also improved S3 writes, separately from query-result reading.
 Bounding multipart parts in flight reduced a 6 GiB write's peak from about 6 GiB to 690–699 MiB with 40 workers.
