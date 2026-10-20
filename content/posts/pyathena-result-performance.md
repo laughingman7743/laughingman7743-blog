@@ -1,7 +1,7 @@
 +++
 title = "Improving PyAthena result reads from 4.0 to 4.2"
 description = "How S3 prefetching, Parquet chunk readers, and block-based row conversion improved PyAthena's result reads, with awswrangler comparisons and 100-million-row measurements."
-date = 2026-10-20
+date = 2026-10-20T00:25:39+09:00
 draft = false
 
 [taxonomies]
