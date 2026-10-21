@@ -1,6 +1,6 @@
 +++
-title = "Improving PyAthena result reads from 4.0 to 4.2"
-description = "How S3 prefetching, Parquet chunk readers, and block-based row conversion improved PyAthena's result reads, with awswrangler comparisons and 100-million-row measurements."
+title = "Benchmarking faster result reads and lower memory use in PyAthena 4.x"
+description = "The implementation changes behind faster result reads and lower memory use in PyAthena 4.x, measured against awswrangler and with 100 million rows."
 date = 2026-10-20T00:25:39+09:00
 draft = false
 
