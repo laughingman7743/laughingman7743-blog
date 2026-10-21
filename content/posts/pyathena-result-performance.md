@@ -19,6 +19,7 @@ These results let me close two issues that had been open for years.
 The new measurements cover a single client's result reader on a new workload, rather than replaying the original queries or demonstrating distributed processing.
 
 The implementation addresses three sources of overhead: waiting for result bytes, keeping too much decoded data alive, and converting columns into Python rows one value at a time.
+These are the improvements available in 4.2.0, including work introduced earlier in the 4.x series.
 
 ## What the benchmark measures
 
@@ -40,6 +41,7 @@ Memory is process RSS sampled every 50 ms, including common benchmark imports; b
 The [harness documentation][harness] defines these boundaries.
 
 Times below are medians, and the before-and-after comparisons link to the baseline for each reader.
+The baselines differ by the part of the reader being compared.[^baselines]
 Those runs used the same instance type and row counts, but different hosts, days, and snapshots of the same source partition; they measure the complete readers, not isolated changes under identical conditions.
 The measured 4.2.0 commit is `9e99caa8`; the release commit `baee716c` differs only in a test file.
 The published run therefore measures the released package code.
@@ -265,11 +267,16 @@ Polars 1.x has a known regression for whole CSV reads in 4.2.0: the parser recei
 At ten million flat rows, its peak was 9,641 MiB, up from 6,854 MiB in the [preceding benchmark][row-baseline].
 Polars 2.0 measured 7,547 MiB for that case; chunking or UNLOAD avoids this particular whole-CSV issue.
 The regression is tracked in [#1307][polars-issue].
-A fix has been merged in [#1313][polars-csv-fix] and is expected in the next PyAthena release.
+
+**Update (October 21, 2026):** A fix has been merged in [#1313][polars-csv-fix] and is expected in the next PyAthena release.
 
 For a DataFrame that fits in memory, direct PandasCursor UNLOAD avoids the SQLAlchemy row round trip.
 For incremental processing, the pandas or Polars chunk readers keep much less of the result alive.
 Applications that need SQLAlchemy can keep that interface and select a result-file driver, while accounting for the remaining conversion cost.
+
+[^baselines]: The CSV and Parquet comparisons use the [October 11 run (4.0.0)][reader-baseline]; the SQLAlchemy and Polars regression comparisons use the [October 13 run (4.1.0)][row-baseline].
+    CSV prefetching and the shared Parquet reader were already present in the latter run.
+    It measured 44.43 seconds for the unchunked PandasCursor CSV client read of ten million flat rows; the [latest report][bench-42] did not investigate the cause of the further decrease to 34.30 seconds.
 
 [issue-61]: https://github.com/pyathena-dev/PyAthena/issues/61
 [issue-254]: https://github.com/pyathena-dev/PyAthena/issues/254
