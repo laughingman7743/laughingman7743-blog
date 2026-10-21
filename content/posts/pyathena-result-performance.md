@@ -2,6 +2,7 @@
 title = "Benchmarking faster result reads and lower memory use in PyAthena 4.2.0"
 description = "How PyAthena 4.2.0 speeds up result reads and reduces memory use, with implementation details, awswrangler comparisons, and benchmarks of 100 million rows."
 date = 2026-10-20T00:25:39+09:00
+updated = 2026-10-22T00:27:38+09:00
 draft = false
 
 [taxonomies]
@@ -99,12 +100,12 @@ The benchmark supports choosing a path for a known workload, not a claim that ev
 ## Overlapping CSV reads and parsing
 
 The earlier PandasCursor CSV path fetched blocks as the parser needed them, leaving the parser waiting on network reads.
-The [prefetching implementation][csv-change] overlaps that waiting with useful work.
+The [prefetching implementation][csv-change], already available before 4.2.0, overlaps that waiting with useful work.
 In 4.2.0, PandasCursor reads a CSV result in 32 MiB blocks by default, with a background cache that holds two blocks.
 While pandas parses the current block, another thread fetches the next one.
 S3FSCursor also prefetches CSV data, and ArrowCursor downloads CSV data through parallel range requests.
 
-For ten million flat rows without chunking, PandasCursor's client result time fell from 80.9 seconds in the [earlier reader benchmark][reader-baseline] to 34.3 seconds in 4.2.0.
+For ten million flat rows without chunking, PandasCursor's client result time fell from 80.9 seconds in the [earlier reader benchmark][reader-baseline] to 34.3 seconds in 4.2.0.[^baselines]
 Prefetching gives the parser a better chance of finding the next bytes ready, but the measurements do not isolate how much of that difference comes from prefetching.
 Athena execution time also varied between runs, which is why this comparison uses client result time.
 
@@ -118,7 +119,7 @@ Returning chunks to the caller is only useful for memory if the reader underneat
 The earlier PolarsCursor could yield UNLOAD chunks, but its underlying scan still kept substantial decoded data alive.
 PandasCursor read UNLOAD results whole even when a chunk size was requested.
 
-The [shared Parquet reader][parquet-change] used by the pandas and Polars paths in 4.2.0 moves chunking into the decoding layer.
+The [shared Parquet reader][parquet-change] used by the pandas and Polars paths, also available before 4.2.0, moves chunking into the decoding layer.
 It decodes files one at a time and uses `ParquetFile.iter_batches()` for one row group at a time.
 Rows carry over between batches and files until an output chunk is complete.
 
@@ -127,9 +128,9 @@ A file up to 32 MiB is fetched whole, with parallel range requests, and the next
 For a larger file, pyarrow buffers coalesced ranges for the current row group; the default filesystem cache does not independently read ahead across the file.
 The [implementation][parquet-reader] keeps the decode scope small while still allowing useful I/O overlap.
 
-At ten million rows with 10,000-row chunks, PolarsCursor's sampled peak RSS changed as follows, comparing the [earlier reader benchmark][reader-baseline] with 4.2.0:
+At ten million rows with 10,000-row chunks, PolarsCursor's sampled peak RSS changed as follows, comparing the [earlier reader benchmark][reader-baseline] with 4.2.0.[^baselines]
 
-| UNLOAD workload | Before | 4.2.0 |
+| UNLOAD workload | Earlier reader | 4.2.0 |
 | --- | ---: | ---: |
 | Flat rows | 3,732 MiB | 665 MiB |
 | Nested rows | 6,073 MiB | 633 MiB |
@@ -267,8 +268,7 @@ Polars 1.x has a known regression for whole CSV reads in 4.2.0: the parser recei
 At ten million flat rows, its peak was 9,641 MiB, up from 6,854 MiB in the [preceding benchmark][row-baseline].
 Polars 2.0 measured 7,547 MiB for that case; chunking or UNLOAD avoids this particular whole-CSV issue.
 The regression is tracked in [#1307][polars-issue].
-
-**Update (October 21, 2026):** A fix has been merged in [#1313][polars-csv-fix] and is expected in the next PyAthena release.
+A fix has been merged in [#1313][polars-csv-fix] and is expected in the next PyAthena release.
 
 For a DataFrame that fits in memory, direct PandasCursor UNLOAD avoids the SQLAlchemy row round trip.
 For incremental processing, the pandas or Polars chunk readers keep much less of the result alive.
@@ -277,6 +277,7 @@ Applications that need SQLAlchemy can keep that interface and select a result-fi
 [^baselines]: The CSV and Parquet comparisons use the [October 11 run (4.0.0)][reader-baseline]; the SQLAlchemy and Polars regression comparisons use the [October 13 run (4.1.0)][row-baseline].
     CSV prefetching and the shared Parquet reader were already present in the latter run.
     It measured 44.43 seconds for the unchunked PandasCursor CSV client read of ten million flat rows; the [latest report][bench-42] did not investigate the cause of the further decrease to 34.30 seconds.
+    Its Polars UNLOAD peaks with 10,000-row chunks were 659 MiB for flat rows and 642 MiB for nested rows, already close to the 665 and 633 MiB measured in 4.2.0.
 
 [issue-61]: https://github.com/pyathena-dev/PyAthena/issues/61
 [issue-254]: https://github.com/pyathena-dev/PyAthena/issues/254
