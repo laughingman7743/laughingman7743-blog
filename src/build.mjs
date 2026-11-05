@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { generateSocialImages } from "./social-images.mjs";
+import { addStructuredData } from "./structured-data.mjs";
 
 const args = ["build"];
 if (process.env.CF_PAGES_BRANCH && process.env.CF_PAGES_BRANCH !== "main") {
@@ -11,3 +12,4 @@ if (process.env.CF_PAGES_BRANCH && process.env.CF_PAGES_BRANCH !== "main") {
 
 execFileSync("zola", args, { stdio: "inherit" });
 await generateSocialImages();
+await addStructuredData();

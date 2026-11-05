@@ -37,13 +37,17 @@ repo_url = "https://github.com/laughingman7743/laughingman7743-blog/tree/main/co
 fediverse = false
 fediverse_creator = ""
 menu = [
-  { name = "/posts", url = "/posts", weight = 1 },
-  { name = "/tags", url = "/tags", weight = 2 },
+  { name = "/posts", url = "/posts/", weight = 1 },
+  { name = "/tags", url = "/tags/", weight = 2 },
 ]
 socials = [
   { name = "GitHub", url = "https://github.com/laughingman7743", icon = "github" },
 ]
 stylesheets = ["share.css"]
+
+[extra.author]
+name = "laughingman7743"
+url = "https://github.com/laughingman7743"
 
 [extra.taxonomies]
 sort_by = "page_count"
