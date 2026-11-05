@@ -23,7 +23,7 @@ npm run build
 ```
 
 `zola serve` previews the content and theme.
-`npm run build` also generates social preview images and their Open Graph and X Card metadata in `public/`.
+`npm run build` also generates social preview images and their Open Graph and X Card metadata in `public/`, then adds article headings and structured data.
 Use the complete build for deployment.
 
 The dependency override for Cheerio 1.2.0 selects `encoding-sniffer` 1.0.2 to avoid its deprecated `whatwg-encoding` dependency.
@@ -57,6 +57,13 @@ https://blog.laughingman7743.org/posts/article-slug/
 The link uses [X's Web Intent](https://docs.x.com/x-for-websites/post-button/guides/web-intent) and works without JavaScript.
 The reader reviews and submits the post on X.
 `extra.canonical_base_url` in `zola.toml` sets the production origin for both canonical metadata and shared article URLs, including preview builds; keep it without a trailing slash.
+
+## Search metadata
+
+Apollo renders the article title as a `<div>`, so the build replaces it with an `<h1>` that keeps the same class and appearance.
+Each article also receives a schema.org `BlogPosting` in JSON-LD with its title, description, canonical URL, dates, social image, tags, and author.
+The dates come from the `article:published_time` and `article:modified_time` metadata in `templates/apollo/head_start.html`, and `[extra.author]` in `zola.toml` sets the author.
+This step runs after the social images so that the JSON-LD can reference them; it lives in `src/structured-data.mjs`.
 
 ## Cloudflare Pages
 

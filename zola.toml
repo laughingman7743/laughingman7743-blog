@@ -45,6 +45,10 @@ socials = [
 ]
 stylesheets = ["share.css"]
 
+[extra.author]
+name = "laughingman7743"
+url = "https://github.com/laughingman7743"
+
 [extra.taxonomies]
 sort_by = "page_count"
 reverse = true

@@ -2,3 +2,13 @@
 <link rel="canonical" href="{{ config.extra.canonical_base_url }}{{ current_path }}">
 <meta property="og:url" content="{{ config.extra.canonical_base_url }}{{ current_path }}">
 {% endif %}
+{% if config.extra.author %}
+<meta name="author" content="{{ config.extra.author.name }}">
+<link rel="author" href="{{ config.extra.author.url }}">
+{% endif %}
+{% if page?.date %}
+<meta property="article:published_time" content="{{ page.date }}">
+{% endif %}
+{% if page?.updated %}
+<meta property="article:modified_time" content="{{ page.updated }}">
+{% endif %}
