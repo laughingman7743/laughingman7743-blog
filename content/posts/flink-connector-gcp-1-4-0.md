@@ -64,15 +64,15 @@ The [Datastore SQL reference][datastore] describes its index requirements and su
 
 ### Selecting a field inside a document
 
-Firestore scans can now request individual fields inside a `ROW` column.
+Firestore Native-mode scans, including collection-group scans, can now request individual fields inside a `ROW` column.
 For a nullable `details ROW<region STRING, category STRING>` column holding an ordinary map, `SELECT details.region FROM orders` requests that field instead of the whole map.
 This is useful when a document holds a large object but a report needs only one value from it.
 Arrays and maps declared as `ARRAY` or `MAP` are still read whole, and nullability and special Firestore types can prevent narrowing a path.
+A `datastore` table scan still reads whole entities.
 
 The [recorded projection measurement][projection-evidence] used 100 documents with 5,000-key maps on both Standard- and Enterprise-edition databases.
 Reading one field took a quarter to a fifth of the time of reading the whole map.
 That measures a wide-map workload, not a general speedup for every scan.
-This nested projection applies to Firestore Native-mode scans, including collection groups; it is not a new Datastore projection capability.
 
 ### Limiting a small inspection query
 
@@ -220,9 +220,16 @@ Version 1.3.0 kept all nine fractional digits regardless of that declaration.
 A bare `TIMESTAMP_LTZ` means precision 6, so declare `TIMESTAMP_LTZ(9)` to preserve every digit; catalog-derived tables already do so.
 This also affects lookup keys: values differing only beyond the declared precision can become equal, and a lookup can match several stored rows.
 
-### Memory budgets and background work
+### Firestore filter pushdown and indexes
 
-In 1.3.0, a backlog could cause repeated job failures when flow control allowed more messages than the fixed subscriber-buffer budget and downstream processing was slow, for example with a `FILE_LOADS` sink and two-minute checkpoints.
+Because Firestore Native-mode filter pushdown is on by default, an existing SQL job on a Standard-edition database can now fail at startup when a pushed filter needs a composite index that does not exist or filters a field exempted from indexing.
+The service's message names the index to create; a table that cannot use the index can set `'scan.filter-push-down.enabled' = 'false'`, as [Reading less from Firestore and Datastore](#reading-less-from-firestore-and-datastore) describes.
+Datastore-mode tables are unaffected, because their property-filter pushdown is opt-in.
+Pushed filters and projection also narrow type checking, as [Type checking after pushdown](#type-checking-after-pushdown) describes.
+
+### Pub/Sub subscriber buffer budget
+
+In 1.3.0, the Pub/Sub source could fail repeatedly under a backlog when flow control allowed more messages than its fixed subscriber-buffer budget and downstream processing was slow, for example with a `FILE_LOADS` sink and two-minute checkpoints.
 The reader failed with `the attempted aggregate subscriber buffer was 10001 messages`, then encountered the same failure after restarting.
 
 Version 1.4.0 fixes this mismatch by deriving the subscriber-buffer budget from flow control.
@@ -231,12 +238,12 @@ An explicit budget below twice the effective flow-control limit is rejected.
 Raise or remove an explicit budget, or lower flow control to reduce the amount of data a slow downstream can hold.
 The subscriber budget is not a bound on all source memory; the [tuning guide][pubsub-tuning] also accounts for records already handed to Flink's fetcher queues.
 
+### BigQuery FILE_LOADS background uploads
+
 For BigQuery `FILE_LOADS`, the default upload-chunk sizing baseline rises from 64 MiB to 72 MiB per writer subtask, before encoding buffers and the rest of the task.
 An upload failure can now surface at the next write, idle close or checkpoint instead of the call that closed the file.
 Set `'sink.file-loads.background-staging-upload.enabled' = 'false'` to retain task-thread uploads.
 If overriding the upload-operation limit, remove that override when disabling the uploader because the combination is rejected.
-
-The Firestore index and type-checking changes described earlier also apply when upgrading an existing SQL job.
 
 ### Restoring state with a new job graph
 
