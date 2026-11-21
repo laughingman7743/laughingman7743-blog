@@ -73,8 +73,8 @@ Leave `s3_max_workers` unset for this trial so the reader and the reusable HTTP 
 Repeat the measurement with the same result size and compare elapsed time and peak process memory.
 Keep the smaller pool if a larger one buys little throughput. [S3 client settings][s3-client]
 
-If urllib3 logs “Connection pool is full” with one cursor, check whether an explicit `s3_max_workers` exceeds the S3 client's `max_pool_connections`.
-With several cursors, also check how many requests they can make together.
+If urllib3 logs “Connection pool is full,” check whether an explicit `s3_max_workers` exceeds the S3 client's `max_pool_connections`.
+Also count all result reads that overlap, including those from queries running through the same `AsyncPolarsCursor`.
 Each result reader using PyAthena's filesystem gets its own worker limit, while the connection shares one S3 HTTP pool per host.
 Increasing that pool also raises the limit for every reader that inherits the default.
 For example, with a pool of 20 and four Polars cursors reading large CSVs at once, create each cursor with `conn.cursor(s3_max_workers=4)`.
