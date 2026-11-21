@@ -48,12 +48,12 @@ The table shows the peak number of simultaneous S3 download requests (`GetObject
 | `S3FSCursor` | 1 | 1 |
 | `Cursor` | 0 | 0 |
 
-`PandasCursor` and the built-in `S3FSCursor` normally read CSV in 32 MiB blocks and prefetch the next block while converting rows.
+`PandasCursor` and `S3FSCursor` normally read CSV in 32 MiB blocks when using PyAthena's filesystem, prefetching the next block while they convert rows.
 This entire file fit in their first block, so each issued one S3 request. [pandas S3 read options][pandas-s3] [S3FSCursor read options][s3fs-s3]
 
 The default `Cursor` recorded zero S3 downloads because it gets its rows through Athena's `GetQueryResults` API.
 `DictCursor` uses the same API.
-With Athena-managed result storage, the Polars cursor also gets the rows from Athena.
+In a workgroup with Athena-managed result storage, `PandasCursor`, `PolarsCursor`, `S3FSCursor`, and `ArrowCursor` also get this query's rows from Athena.
 The S3 pool setting has no effect on these reads. [S3 client settings][s3-client] [Managed query result storage][managed-results]
 
 ## Tuning the S3 connection after upgrading
@@ -78,9 +78,13 @@ If Athena's time is steady, the difference also includes polling, network transf
 Look for time spent reading large S3 results before increasing concurrency. [Athena query statistics][query-stats]
 
 For one whole-file Polars CSV read with the defaults, only a file larger than 50 MiB gives an eleventh worker a range to read.
-For pandas and S3FS CSV reads, increasing the pool alone preserves the default one-block read-ahead pattern.
-`ArrowCursor` reads S3 result data through PyArrow's own client, and an unchunked Polars Parquet UNLOAD uses the native Polars S3 reader by default.
-Those data reads use their respective libraries' settings. [S3 client settings][s3-client] [Polars S3 read options][polars-s3]
+For pandas and S3FS CSV reads, increasing the connection pool (or `s3_max_workers` on pandas) leaves the default one-block read-ahead in place.
+To change how pandas reads the file, pass `block_size` or `cache_type` to the cursor or to `execute()`.
+For example, passing only `block_size` uses that size with the filesystem's default `"bytes"` cache. [pandas S3 read options][pandas-s3]
+
+A chunked Polars CSV read and an unchunked Polars Parquet UNLOAD both use the native Polars S3 reader by default.
+A chunked Polars UNLOAD uses PyAthena's filesystem when PyArrow is installed and `execute()` receives no Polars read options.
+`ArrowCursor` reads S3 result data with PyArrow's own client. [Polars S3 read options][polars-s3] [S3 client settings][s3-client]
 
 For a single transfer-bound reader with more ranges ready than workers, try passing `s3_config=Config(max_pool_connections=20)` to `connect()`, with `Config` imported from `botocore.config`.
 Leave `s3_max_workers` unset for this trial so the reader and the reusable HTTP pool grow together.
@@ -101,9 +105,11 @@ urllib3 can discard connections opened beyond the pool's capacity after use. [S3
 The filesystem also has a separate operation for downloading an S3 object to a local file.
 In 4.2.1 its synchronous `get_file()` loop copied one block to the destination at a time.
 In 4.3.0 it can request a group of ranges in parallel and write them in order.
-The pre-release benchmark at commit `1d9e5039` timed this download through synchronous `get`, copying one 1 GiB object filled with zeros to a memory-backed file.
+The pre-release benchmark at commit `1d9e5039` timed how fast synchronous `get_file()` copied one 1 GiB object filled with zeros to a memory-backed file.
 The timing excludes SQL execution and CSV parsing.
-The download ran on one `c8gn.2xlarge` Spot instance in the bucket's region with Python 3.12, 8 MiB ranges, and a connection pool of 40.
+The download ran on one `c8gn.2xlarge` Spot instance in the bucket's region with Python 3.12 and a connection pool of 40.
+Both rows use an 8 MiB `block_size` and an explicit filesystem `max_workers` of 8 or 40.
+An unconfigured 4.3.0 filesystem uses 5 MiB ranges and 10 workers.
 Each rate is the median of five trials without warmups. [Benchmark results][measurements]
 
 | Range workers | Download rate | Peak process RSS |
