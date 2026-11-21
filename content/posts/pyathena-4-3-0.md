@@ -39,13 +39,13 @@ When Polars reads the whole file, PyAthena splits the read at the default 5 MiB 
 PyAthena joins the bytes in file order and Polars parses them before `execute()` returns.
 `fetchall()` then returns the rows as Python tuples. [Polars S3 read options][polars-s3]
 
-With Polars 1.44.2, this query produced a 16,817,083-byte CSV.
-To measure overlap, I counted each ranged botocore `GetObject` call from entry until it returned the response headers.
+In this run, Athena wrote a 16,817,083-byte CSV.
+While Polars 1.44.2 read it, I counted each ranged botocore `GetObject` call from entry until it returned the response headers.
 Four calls were in flight at once, starting at offsets of 0, 5, 10, and 15 MiB and together covering the object.
 
 The default DB-API `Cursor` pages through Athena's `GetQueryResults` API.
 With Athena-managed result storage, the Polars cursor also gets the rows from that API.
-Both paths use the Athena client for the rows. [S3 client settings][s3-client] [Managed query result storage][managed-results]
+Both paths fetch rows through the Athena client, so S3 pool tuning has no effect on those reads. [S3 client settings][s3-client] [Managed query result storage][managed-results]
 
 ## Tuning the S3 connection after upgrading
 
@@ -73,7 +73,8 @@ Leave `s3_max_workers` unset for this trial so the reader and the reusable HTTP 
 Repeat the measurement with the same result size and compare elapsed time and peak process memory.
 Keep the smaller pool if a larger one buys little throughput. [S3 client settings][s3-client]
 
-If urllib3 logs “Connection pool is full” with several cursors, check how many requests they can make together.
+If urllib3 logs “Connection pool is full” with one cursor, check whether an explicit `s3_max_workers` exceeds the S3 client's `max_pool_connections`.
+With several cursors, also check how many requests they can make together.
 Each result reader using PyAthena's filesystem gets its own worker limit, while the connection shares one S3 HTTP pool per host.
 Increasing that pool also raises the limit for every reader that inherits the default.
 For example, with a pool of 20 and four Polars cursors reading large CSVs at once, create each cursor with `conn.cursor(s3_max_workers=4)`.
