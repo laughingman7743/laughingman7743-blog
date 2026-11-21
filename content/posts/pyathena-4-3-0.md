@@ -16,7 +16,7 @@ Even applications that never create a filesystem explicitly can see a change aft
 
 Suppose an Athena export occupies several Parquet files under one S3 prefix.
 With `S3FileSystem.get()`, `batch_size` controls how many files are downloaded at once.
-For each uncompressed download, the filesystem reads several ranges of the object concurrently and writes them to disk in order.
+For a large uncompressed object, the filesystem can read several ranges concurrently and write them to disk in order.
 
 ```python
 from botocore.config import Config
@@ -57,9 +57,11 @@ The destination was a memory-backed filesystem whose storage is outside that RSS
 Code that constructs `S3FileSystem(connection=conn)` or `AioS3FileSystem(connection=conn)` now gets a `DeprecationWarning`.
 Use `s3_filesystem(conn)` as above, or `s3_filesystem(conn, AioS3FileSystem)` for the asyncio filesystem.
 The helper borrows the connection's S3 client and uses its retry policy.
-For an API that accepts `storage_options`, replace `{"connection": conn}` with `{"client": conn.s3_client, "retry_config": conn.retry_config}` while the connection is open.
 Set the region, endpoint, or credentials when constructing the client.
 Passing those options explicitly alongside `client=` or `connection=` raises `TypeError`. [Filesystem guide][filesystem]
+
+For a reader that passes `storage_options` to PyAthena's fsspec filesystem, replace `{"connection": conn}` with `{"client": conn.s3_client, "retry_config": conn.retry_config}` while the connection is open.
+Polars readers that use native S3 access take their own storage options. [Polars S3 read options][polars-s3]
 
 For `PandasCursor` and `PolarsCursor`, including their thread-based async and native asyncio variants, the old default for `s3_max_workers` was five times the CPU count.
 In 4.3.0 the default is `None`, so result reads through PyAthena's filesystem take their worker count from the client's `max_pool_connections`, normally 10.
@@ -93,13 +95,14 @@ For these connections, the upload workers used by `pyathena.pandas.util.to_sql()
 `to_sql()` now runs its SQL through an internal plain cursor and turns off query result reuse for the table-existence check.
 For a connection configured with a DataFrame cursor, this means the lookup uses the connection's workgroup and bypasses cursor options such as `unload`.
 
-With `if_exists="replace"`, `to_sql()` drops the existing table and deletes its old S3 objects before uploading the new data.
+With `if_exists="replace"`, `to_sql()` drops the existing table and deletes the objects under the supplied `location` before uploading the new data.
+Pass a prefix dedicated to that table.
 S3 can report a successful batch request while returning errors for individual keys.
 4.2.1 could then write the replacement files alongside the old ones, and Athena could read rows from both.
 4.3.0 raises `OperationalError` naming the affected objects before writing any replacement data.
 
 At that point the table has already been dropped.
-Resolve the reported deletion errors, remove the remaining old objects under the table's S3 location, then run the replacement again.
+Resolve the reported deletion errors, remove the old objects that remain under that same `location`, then run the replacement again.
 A retry while the table is absent skips the cleanup step because `to_sql()` only deletes old objects when it finds an existing table. [pandas guide][pandas-guide]
 
 ## Upgrading from 4.2.1
@@ -116,5 +119,6 @@ The [4.3.0 release notes][release] cover the remaining changes, including asynci
 [release]: https://github.com/pyathena-dev/PyAthena/releases/tag/v4.3.0
 [measurements]: https://github.com/pyathena-dev/PyAthena/blob/476d68a5c1952626fab9b4e4dc065dc076557554/benchmarks/history/2026-11-15-1d9e5039-filesystem.md#downloads
 [filesystem]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/filesystem.md
+[polars-s3]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/polars.md#s3-read-options
 [connections]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/usage.md#assume-role-provider-with-mfa
 [pandas-guide]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/pandas.md#to-sql
