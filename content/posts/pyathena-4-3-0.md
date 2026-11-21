@@ -10,7 +10,7 @@ tags = ["AWS", "Athena", "Python", "S3"]
 
 I released **PyAthena 4.3.0** on November 17 (Japan time).
 When saving an S3 object to a local file, 4.3.0 now schedules a group of byte ranges for its download workers.
-On my machine, 4.3.0 downloaded the same 96 MiB CSV at 2.5 times the rate of 4.2.1 with eight workers configured in both.
+On my WSL 2 client, 4.3.0 downloaded a 96 MiB CSV from S3 in `us-west-2` at 2.5 times the rate of 4.2.1 with eight workers configured in both.
 The DB-API's `PolarsCursor` could already read several parts of a CSV at once in 4.2.1.
 What changed for that cursor is how many workers it can use by default. [Release notes][release]
 
@@ -18,7 +18,8 @@ What changed for that cursor is how many workers it can use by default. [Release
 
 I compared the published releases by calling `S3FileSystem.get_file()` on the same uncompressed Athena result.
 I fixed the filesystem's `max_workers` and the S3 client's `max_pool_connections` at 8, and passed the same 5 MiB `block_size` to each download.
-Both versions used the same Python and AWS SDK on the same Linux machine, with a fresh process and a new local file for every trial.
+In a separate check on this path, five `HeadObject` calls for this object took a median of 145 ms after one warm-up call on the same client.
+Both versions used the same Python and AWS SDK, with a fresh process and a new local file for every timed trial.
 I timed the `get_file()` call after checking the object's size, alternated which release went first across five pairs, and verified that all ten files had the same SHA-256 digest.
 
 | PyAthena | Median time | Transfer rate |
@@ -37,7 +38,7 @@ Raising the worker count from 8 to 40 increased throughput from 469 to 613 MiB/s
 ## Reading a large result with the DB-API
 
 A `PolarsCursor` reads an ordinary, unchunked CSV into memory during `execute()`.
-To see the change in its default concurrency, this query generates 4,096 rows with a 24 KiB string in each, without needing a table.
+The query below produced the benchmark file by generating 4,096 rows with a 24 KiB string in each.
 Install `PyAthena[Polars]==4.3.0`, set `AWS_DEFAULT_REGION` and `AWS_ATHENA_S3_STAGING_DIR`, and use a workgroup that writes results to an S3 location you can read.
 
 ```python
@@ -55,17 +56,20 @@ with connect(cursor_class=PolarsCursor) as conn:
 
 Athena wrote one CSV just over 96 MiB in size.
 Each release fetched it in twenty ranges of up to 5 MiB during `execute()`, so `fetchall()` could return the rows from memory.
-With the default connection, I measured **20 simultaneous range reads on 4.2.1 and 10 on 4.3.0**.
+I counted each range read from the call to `S3Core.get_object()` until it finished reading the response body.
+With the default connection, the peak was **20 simultaneous range reads on 4.2.1 and 10 on 4.3.0**.
 In 4.2.1 the default was five workers per CPU, so the 24 logical CPUs on this machine allowed all twenty reads to start.
-In 4.3.0 the default comes from the S3 client's `max_pool_connections`, normally 10. [Polars S3 read options][polars-s3] [S3 client settings][s3-client]
+In 4.3.0 the default comes from the S3 client's `max_pool_connections`, normally 10.
+For a whole-file Polars CSV read with 5 MiB blocks, that lower default can reduce overlap when the result exceeds 50 MiB and Python reports more than two CPUs. [Polars S3 read options][polars-s3] [S3 client settings][s3-client]
 
 ## Tuning the connection after upgrading
 
 If a query feels slower after upgrading, time it from `execute()` through result consumption and compare that with `cursor.total_execution_time_in_millis`, Athena's server-side time.
 If the server time grew, check Athena's queue and engine timings first.
 If server time is steady, look for extra time spent polling, transferring results, or parsing them.
-When the S3 transfer is the bottleneck, try passing `s3_config=Config(max_pool_connections=20)` to `connect()`, with `Config` imported from `botocore.config`.
-Leaving `s3_max_workers` unset with that setting brought the same 4.3.0 Polars query back to 20 simultaneous reads.
+If the S3 transfer is the bottleneck, try a larger pool.
+For this file's twenty ranges, I passed `s3_config=Config(max_pool_connections=20)` to `connect()`, with `Config` imported from `botocore.config`.
+Leaving `s3_max_workers` unset let the 4.3.0 cursor use that pool size, and the same query reached 20 simultaneous reads.
 Compare elapsed time and peak memory on your own results before keeping the larger pool. [Athena query statistics][query-stats] [S3 client settings][s3-client]
 
 The new limit also applies to `PandasCursor` and to `S3FSCursor` with PyAthena's filesystem.
