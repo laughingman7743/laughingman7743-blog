@@ -8,7 +8,7 @@ draft = false
 tags = ["AWS", "Athena", "Python", "S3"]
 +++
 
-I released **PyAthena 4.3.0** on November 17 (Japan time).
+I released **PyAthena 4.3.0** on November 16.
 When saving an S3 object to a local file, 4.3.0 now schedules a group of byte ranges for its download workers.
 On my WSL 2 client, 4.3.0 downloaded a 96 MiB CSV from S3 in `us-west-2` at 2.5 times the rate of 4.2.1 with eight workers configured in both.
 The DB-API's `PolarsCursor` could already read several parts of a CSV at once in 4.2.1.
