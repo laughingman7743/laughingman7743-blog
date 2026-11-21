@@ -1,6 +1,6 @@
 +++
 title = "Releasing PyAthena 4.3.0 with parallel S3 transfers"
-description = "Follow a DB-API query from Athena to parallel S3 reads, see the measured throughput and memory cost, and tune the connection when upgrading from PyAthena 4.2.1."
+description = "Follow a Polars query through PyAthena 4.3.0, tune the S3 connection pool, and compare throughput and memory in a 1 GiB filesystem download benchmark."
 date = 2026-11-21T21:25:21+09:00
 draft = false
 
@@ -36,13 +36,16 @@ with connect(cursor_class=PolarsCursor) as conn:
 Athena writes the result to one CSV object.
 For this unchunked CSV, PyAthena opens the object with the connection's S3 client and hands the file to Polars.
 When Polars reads the whole file, PyAthena splits the read at the default 5 MiB block size.
-In a run with Polars 1.44.2, four S3 `GetObject` requests were in flight at once, each reading a different range of the 16,817,083-byte result.
 PyAthena joins the bytes in file order and Polars parses them before `execute()` returns.
 `fetchall()` then returns the rows as Python tuples. [Polars S3 read options][polars-s3]
 
+With Polars 1.44.2, this query produced a 16,817,083-byte CSV.
+To measure overlap, I counted each ranged botocore `GetObject` call from entry until it returned the response headers.
+Four calls were in flight at once, starting at offsets of 0, 5, 10, and 15 MiB and together covering the object.
+
 The default DB-API `Cursor` pages through Athena's `GetQueryResults` API.
 With Athena-managed result storage, the Polars cursor also gets the rows from that API.
-An S3 connection-pool setting affects neither of those reads. [Connection guide][s3-client]
+Both paths use the Athena client for the rows. [S3 client settings][s3-client] [Managed query result storage][managed-results]
 
 ## Tuning the S3 connection after upgrading
 
@@ -58,20 +61,25 @@ If Athena itself took longer, inspect its queue and engine times first.
 If Athena's time is steady, the difference also includes polling, network transfer, and local parsing.
 Look for time spent reading large S3 results before increasing concurrency. [Athena query statistics][query-stats]
 
-For a transfer-bound workload, try passing `s3_config=Config(max_pool_connections=20)` to `connect()`, with `Config` imported from `botocore.config`.
-Leave the cursor's `s3_max_workers` unset so the reader and the reusable HTTP pool grow together.
-Repeat the measurement with the same result size and usual number of simultaneous queries, and compare elapsed time and peak process memory.
-Keep the smaller pool if a larger one buys little throughput.
-The four ranges in the example already fit in the default pool. [S3 client settings][s3-client]
+First check which reader handles the result.
+For one whole-file Polars CSV read with the defaults, ten 5 MiB ranges cover 50 MiB.
+Only a larger CSV gives an eleventh worker a range to read.
+The default pandas CSV cache fetches individual 32 MiB blocks and prefetches the next block while pandas parses the current one.
+Increasing the pool alone preserves that one-block read-ahead pattern.
+An unchunked Polars Parquet UNLOAD uses the native Polars S3 reader by default, with its own connection settings. [pandas S3 read options][pandas-s3] [Polars S3 read options][polars-s3]
 
-The reader also determines how much work the pool can do.
-For example, the default pandas CSV path reads 32 MiB blocks and prefetches the next block while pandas parses the current one.
-Polars uses its native S3 reader by default for an unchunked Parquet UNLOAD. [pandas S3 read options][pandas-s3] [Polars S3 read options][polars-s3]
+For a single transfer-bound reader with more ranges ready than workers, try passing `s3_config=Config(max_pool_connections=20)` to `connect()`, with `Config` imported from `botocore.config`.
+Leave `s3_max_workers` unset for this trial so the reader and the reusable HTTP pool grow together.
+Repeat the measurement with the same result size and compare elapsed time and peak process memory.
+Keep the smaller pool if a larger one buys little throughput. [S3 client settings][s3-client]
 
-If urllib3 logs “Connection pool is full,” check explicit worker overrides and how many cursors share the connection.
-On the Polars connection above, `conn.cursor(s3_max_workers=4)` limits one reader to four workers while other cursors can use the connection's larger default.
-If the application needs the higher concurrency, size the connection's S3 pool for the concurrent requests you expect to reuse.
-The HTTP pool keeps connections per host and can discard excess connections after use. [S3 client settings][s3-client]
+If urllib3 logs “Connection pool is full” with several cursors, check how many requests they can make together.
+Each result reader using PyAthena's filesystem gets its own worker limit, while the connection shares one S3 HTTP pool per host.
+Increasing that pool also raises the limit for every reader that inherits the default.
+For example, with a pool of 20 and four Polars cursors reading large CSVs at once, create each cursor with `conn.cursor(s3_max_workers=4)`.
+Those readers can issue up to 16 range requests between them, leaving room to reuse connections for other S3 calls to the same host.
+Check elapsed time and peak memory with all four readers active.
+urllib3 can discard connections opened beyond the pool's capacity after use. [S3 client settings][s3-client]
 
 ## What the parallel download benchmark measured
 
@@ -86,9 +94,12 @@ Each rate is the median of five trials without warmups. [Benchmark results][meas
 | 40 | 613 MiB/s | 938 MiB |
 
 Going from 8 to 40 workers raised throughput by about 31% on this host and added 602 MiB to peak resident memory (RSS).
-The filesystem writes each group of ranges before reading the next one, so a full group carries 64 MiB of payload at eight workers and 320 MiB at 40.
-Peak RSS includes the benchmark process and its imports.
-The memory-backed destination sits outside that figure.
+The filesystem writes each group of ranges before reading the next one.
+A full group carries 64 MiB of payload at eight workers and 320 MiB at 40.
+A worker can also briefly retain a range it has just read.
+The 256 MiB increase in group payload is smaller than the measured 602 MiB rise in peak RSS.
+The benchmark sampled the whole process, including its imports.
+The memory-backed destination sits outside that figure. [Filesystem guide][filesystem]
 
 ## Sharing a connection's S3 settings
 
@@ -171,6 +182,7 @@ The [4.3.0 release notes][release] cover the remaining changes, including asynci
 [polars-s3]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/polars.md#s3-read-options
 [pandas-s3]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/pandas.md#s3-read-options
 [s3-client]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/usage.md#s3-client
+[managed-results]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/usage.md#managed-query-result-storage
 [query-stats]: https://docs.aws.amazon.com/athena/latest/APIReference/API_QueryExecutionStatistics.html
 [connections]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/usage.md#assume-role-provider-with-mfa
 [pandas-guide]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/pandas.md#to-sql
