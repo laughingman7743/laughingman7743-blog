@@ -58,7 +58,7 @@ Code that constructs `S3FileSystem(connection=conn)` or `AioS3FileSystem(connect
 Use `s3_filesystem(conn)` as above, or `s3_filesystem(conn, AioS3FileSystem)` for the asyncio filesystem.
 The helper borrows the connection's S3 client and uses its retry policy.
 Set the region, endpoint, or credentials when constructing the client.
-Passing those options explicitly alongside `client=` or `connection=` raises `TypeError`. [Filesystem guide][filesystem]
+Passing an explicit value other than `None` for one of those options alongside `client=` or `connection=` raises `TypeError`. [Filesystem guide][filesystem]
 
 For a reader that passes `storage_options` to PyAthena's fsspec filesystem, replace `{"connection": conn}` with `{"client": conn.s3_client, "retry_config": conn.retry_config}` while the connection is open.
 Polars readers that use native S3 access take their own storage options. [Polars S3 read options][polars-s3]
@@ -88,9 +88,10 @@ Here the number controls simultaneous S3 `DeleteObjects` requests, each of which
 
 ## Long-lived connections and table replacement
 
-A connection created with `role_arn` or `serial_number` now refreshes its temporary STS credentials as they approach expiry.
+When PyAthena obtains temporary STS credentials through `role_arn` or `serial_number`, it now refreshes them as they approach expiry.
 With MFA, the thread making the AWS call can prompt for a new code during refresh.
-For these connections, the upload workers used by `pyathena.pandas.util.to_sql()` get the current credentials when the uploads begin and keep that snapshot for the duration of the upload. [Connection guide][connections]
+For these connections, the upload workers used by `pyathena.pandas.util.to_sql()` get the current credentials when the uploads begin and keep that snapshot for the duration of the upload.
+A caller that passes `session=` supplies its own boto3 session, which takes precedence for credential selection. [Connection guide][connections]
 
 `to_sql()` now runs its SQL through an internal plain cursor and turns off query result reuse for the table-existence check.
 For a connection configured with a DataFrame cursor, this means the lookup uses the connection's workgroup and bypasses cursor options such as `unload`.
