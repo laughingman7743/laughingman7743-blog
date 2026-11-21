@@ -48,9 +48,10 @@ Both reads had the same peak concurrency and the same number of connections disc
 | 4.3.0, pool of 20 | 20 | 0 |
 
 With 4.3.0's defaults, the reader worked through the same 20 parts ten at a time.
-All ten connections could return to the pool for reuse.
-I also timed `execute()` through `fetchall()` three times per setting against the same stored result.
-The elapsed times overlapped across all three settings. [S3 client settings][s3-client]
+The pool had room for every returned connection, though the second read still opened nine new HTTPS connections with the default pool and fourteen with the larger pool. [S3 client settings][s3-client]
+
+For a separate timing, I started a fresh process and connection for each run and timed `execute()` through `fetchall()` against the same stored result.
+Across three runs per setting, the elapsed times overlapped.[^timings]
 
 ## When to change the pool size
 
@@ -62,7 +63,8 @@ When the S3 transfer is the bottleneck, try a larger pool. [Athena query statist
 For the third row in the table, I imported `Config` from `botocore.config` and added `s3_config=Config(max_pool_connections=20)` to the same `connect()` call.
 I left `s3_max_workers` unset so the reader picked up the new pool size.
 Compare elapsed time and peak memory with your own results before keeping that setting.
-If several pandas or Polars readers share one connection, set a smaller `s3_max_workers` on each cursor when their combined reads fill the pool. [S3 client settings][s3-client]
+If several pandas or Polars readers share one connection, set a smaller `s3_max_workers` on each cursor when their combined reads fill the pool.
+The same settings apply to their thread-based async and asyncio cursors. [S3 client settings][s3-client]
 
 ## Which other cursors use this setting?
 
@@ -72,6 +74,7 @@ On this same file their peak was one S3 read at a time in both releases, so I wo
 
 For the unchunked CSV above, 4.3.0 uses the connection's S3 client even if another filesystem is registered for `s3` in fsspec.
 Passing `storage_options` explicitly to `execute()` uses the registered filesystem for that read.
+Polars also uses the connection's pool for chunked Parquet `UNLOAD` reads through PyArrow when `execute()` receives no Polars read options.
 Chunked Polars CSV reads use native Polars S3 access by default, and `ArrowCursor` reads S3 data with PyArrow's client.
 With Athena-managed results, these cursors get the rows for this query through Athena. [Polars S3 read options][polars-s3] [Managed query results][managed-results]
 
@@ -79,11 +82,13 @@ With Athena-managed results, these cursors get the rows for this query through A
 
 A long-running job that connects with `role_arn` or `serial_number` could lose access in 4.2.1 when its temporary credentials expired.
 In 4.3.0 PyAthena requests fresh credentials before they expire, so the job can keep using the same connection.
+PyAthena uses any supplied profile, keys, or `botocore_session` to sign the STS requests and creates a new session for the clients that use the resulting credentials.
 With MFA enabled through `serial_number`, the thread making the AWS request can prompt for another code.
 If you pass a boto3 `session` to `connect()`, that session manages authentication.
 The upload workers in pandas `to_sql()` take a snapshot of PyAthena-managed credentials when uploads start, so an upload can still outlast those credentials. [Connection guide][connections] [pandas guide][pandas-guide]
 
-For pandas writes, `pyathena.pandas.util.to_sql(..., if_exists="replace")` now stops if S3 reports that it could not delete some of the old files.
+For pandas writes, `pyathena.pandas.util.to_sql()` now uses a plain cursor for its SQL, so a connection's DataFrame cursor options no longer affect its table lookup.
+With `if_exists="replace"`, it stops if S3 reports that it could not delete some of the old files.
 4.2.1 could write the replacement beside them, leaving Athena to read rows from both datasets.
 4.3.0 raises `OperationalError` with the affected objects before uploading replacement data.
 The table has already been dropped at that point.
@@ -91,10 +96,12 @@ Clear the remaining old objects from the table's dedicated S3 location before re
 
 ## S3 filesystem internals
 
-The filesystem also speeds up copying an S3 object to a local file by downloading several parts before writing them in order.
-With eight workers configured in both releases, a trace of the same 96 MiB file showed two overlapping reads in 4.2.1 and eight in 4.3.0.
-Across five timed copies per release from S3 in `us-west-2` to my WSL 2 machine, median copy time fell from **69.6 s to 28.2 s**.
-The Polars cursor reads the CSV directly into memory and skips this copy. [Filesystem guide][filesystem]
+The S3 filesystem's `get()` and `get_file()` now download parts of an object in parallel when copying it to disk.
+The DB-API cursors above read their results without making this local copy.
+With eight workers, eight pool slots and 5 MiB blocks in both releases, a trace of the same 96 MiB file showed two overlapping reads in 4.2.1 and eight in 4.3.0.
+Across five timed copies per release from S3 in `us-west-2` to my WSL 2 machine, median copy time fell from 69.6 s to 28.2 s. [Filesystem guide][filesystem]
+
+[^timings]: The three trials ranged from 12.4 to 65.3 s on 4.2.1 with the default pool, 12.2 to 17.8 s on 4.3.0 with the default pool, and 12.6 to 14.1 s on 4.3.0 with a pool of 20.
 
 [release]: https://github.com/pyathena-dev/PyAthena/releases/tag/v4.3.0
 [filesystem]: https://github.com/pyathena-dev/PyAthena/blob/v4.3.0/docs/filesystem.md
