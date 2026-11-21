@@ -63,7 +63,8 @@ The helper borrows the connection's S3 client and uses its retry policy.
 
 Check wrappers that used to pass client-building options alongside `connection=`.
 4.2.1 ignored those options.
-In 4.3.0 an explicit value other than `None` raises `TypeError`, including `read_timeout=30`, `config_kwargs={}`, or even `anon=False`.
+With fsspec's default configuration, 4.3.0 raises `TypeError` for explicit values other than `None`, including `read_timeout=30`, `config_kwargs={}`, or even `anon=False`.
+The filesystem ignores values inherited from fsspec's configuration, even when a wrapper passes the same value explicitly.
 The same rule applies to `client=`.
 When reusing the connection's client, set its region on `connect()` and its S3 timeouts through `s3_config=Config(...)`. [Filesystem guide][filesystem]
 
