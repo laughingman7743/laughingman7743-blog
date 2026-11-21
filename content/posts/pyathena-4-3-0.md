@@ -18,7 +18,8 @@ What changed for that cursor is how many workers it can use by default. [Release
 
 I compared the published releases by calling `S3FileSystem.get_file()` on the same uncompressed Athena result.
 I fixed the filesystem's `max_workers` and the S3 client's `max_pool_connections` at 8, and passed the same 5 MiB `block_size` to each download.
-In a separate check on this path, five `HeadObject` calls for this object took a median of 145 ms after one warm-up call on the same client.
+On the WSL 2 host, I used a separate boto3 client to time `HeadObject` against the same object in `us-west-2`.
+After one warm-up call, five consecutive calls took a median of 145 ms.
 Both versions used the same Python and AWS SDK, with a fresh process and a new local file for every timed trial.
 I timed the `get_file()` call after checking the object's size, alternated which release went first across five pairs, and verified that all ten files had the same SHA-256 digest.
 
